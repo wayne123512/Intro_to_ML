@@ -25,7 +25,7 @@ def special_reshape(x: ndarray) -> ndarray:
     Returns:
         ndarray: Output ndarray.
     """
-    pass
+    return x.reshape(-1,x.shape[-1])
 
 
 # Question 5.2
@@ -42,7 +42,7 @@ def linear(x: ndarray, W: ndarray, b) -> ndarray:
     Returns:
         ndarray: Output vector of size (n,).
     """
-    pass
+    return W@x+b
 
 
 # Question 5.3
@@ -57,7 +57,7 @@ def sigmoid(x: ndarray) -> ndarray:
     Returns:
         ndarray: Output vector of size (n,).
     """
-    pass
+    return 1 / (1 + np.exp(-x))
 
 
 # Question 5.4
@@ -79,4 +79,4 @@ def two_layer_nn(x: ndarray, W1: ndarray, W2: ndarray, b1: ndarray, b2: ndarray)
     Returns:
         ndarray: Output vector.
     """
-    pass
+    return sigmoid(linear(sigmoid(linear(x,W1,b1)), W2,b2))
