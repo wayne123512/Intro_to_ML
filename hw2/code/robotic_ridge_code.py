@@ -2,6 +2,7 @@ import numpy as np
 import numpy.linalg as LA
 import pickle
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def load_data() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     x_train = pickle.load(open('x_train.p', 'rb'), encoding='latin1')
@@ -29,7 +30,11 @@ def compute_data_matrix(images: np.ndarray, controls: np.ndarray, standardize: b
         X (ndarray): input array of size (n, 2700) where each row is a flattened image
         Y (ndarray): label array of size (n, 3) where row i corresponds to the control for X[i]
     """
-    pass
+    if standardize:
+        images = 2 * images/255.0 - 1
+    images = images.reshape(images.shape[0], -1)
+
+    return (images, controls)
 
 def ridge_regresion(X: np.ndarray, Y: np.ndarray, lmbda: float) -> np.ndarray:
     """
@@ -41,7 +46,7 @@ def ridge_regresion(X: np.ndarray, Y: np.ndarray, lmbda: float) -> np.ndarray:
     Returns:
         pi (ndarray): learned policy of size (2700, 3)
     """
-    pass
+    return np.linalg.inv(X.T@X+lmbda*np.eye(X.shape[1]))@X.T@Y
 
 def ordinary_least_squares(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     """
@@ -52,7 +57,8 @@ def ordinary_least_squares(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     Returns:
         pi (ndarray): learned policy of size (2700, 3)
     """
-    pass
+    return np.linalg.inv(X.T@X)@X.T@Y
+    #return np.linalg.pinv(X)@Y
 
 def measure_error(X: np.ndarray, Y: np.ndarray, pi: np.ndarray) -> float:
     """
@@ -64,7 +70,7 @@ def measure_error(X: np.ndarray, Y: np.ndarray, pi: np.ndarray) -> float:
     Returns:
         error (float): the mean Euclidean distance error across all n samples
     """
-    pass
+    return np.sum((X@pi-Y) ** 2)/X.shape[0]
 
 def compute_condition_number(X: np.ndarray, lmbda: float) -> float:
     """
@@ -75,7 +81,7 @@ def compute_condition_number(X: np.ndarray, lmbda: float) -> float:
     Returns:
         kappa (float): condition number of the input array with the given lambda
     """
-    pass
+    return np.linalg.cond(X.T@X+lmbda*np.eye(X.shape[1]), 2)
 
 if __name__ == '__main__':
 
