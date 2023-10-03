@@ -87,7 +87,7 @@ class Sigmoid(Activation):
         f(z) as described above applied elementwise to `Z`
         """
         ### YOUR CODE HERE ###
-        return ...
+        return 1 / (1 + np.exp(-Z))
 
     def backward(self, Z: np.ndarray, dY: np.ndarray) -> np.ndarray:
         """Backward pass for sigmoid.
@@ -103,7 +103,8 @@ class Sigmoid(Activation):
         derivative of loss w.r.t. 'Z'
         """
         ### YOUR CODE HERE ###
-        return ...
+        fn = self.forward(Z)
+        return fn * (1-fn) * dY
 
 
 class TanH(Activation):
@@ -158,7 +159,7 @@ class ReLU(Activation):
         f(z) as described above applied elementwise to `Z`
         """
         ### YOUR CODE HERE ###
-        return ...
+        return np.maximum(Z, 0)
 
     def backward(self, Z: np.ndarray, dY: np.ndarray) -> np.ndarray:
         """Backward pass for relu activation.
@@ -174,7 +175,7 @@ class ReLU(Activation):
         derivative of loss w.r.t. 'Z'
         """
         ### YOUR CODE HERE ###
-        return ...
+        return (Z > 0) * dY
 
 
 class SoftMax(Activation):
@@ -195,7 +196,8 @@ class SoftMax(Activation):
         to each sample's activations (same shape as 'Z')
         """
         ### YOUR CODE HERE ###
-        return ...
+        Z = Z - np.max(Z, axis=1, keepdims=True)
+        return np.exp(Z) / np.sum(np.exp(Z), axis=1, keepdims=True)
 
     def backward(self, Z: np.ndarray, dY: np.ndarray) -> np.ndarray:
         """Backward pass for softmax activation.
@@ -211,4 +213,7 @@ class SoftMax(Activation):
         derivative of loss w.r.t. Z
         """
         ### YOUR CODE HERE ###
-        return ...
+        f = self.forward(Z)
+        fn = f.reshape(f.shape[0],-1,1)
+        fnT = fn.reshape(fn.shape[0],1,-1)
+        return  f*dY-((fn*fnT) @ dY.reshape(dY.shape[0],-1,1)).reshape(f.shape[0],-1)

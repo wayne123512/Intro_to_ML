@@ -50,7 +50,7 @@ class CrossEntropy(Loss):
         a single float representing the loss
         """
         ### YOUR CODE HERE ###
-        return ...
+        return -np.mean(np.sum(Y * np.log(Y_hat), axis=1), axis=0)
 
     def backward(self, Y: np.ndarray, Y_hat: np.ndarray) -> np.ndarray:
         """Backward pass of cross-entropy loss.
@@ -67,4 +67,4 @@ class CrossEntropy(Loss):
         predictions, `Y_hat`
         """
         ### YOUR CODE HERE ###
-        return ...
+        return -Y / Y_hat / Y.shape[0]

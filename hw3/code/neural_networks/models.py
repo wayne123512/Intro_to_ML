@@ -97,7 +97,9 @@ class NeuralNetwork(ABC):
         """
         ### YOUR CODE HERE ###
         # Iterate through the network's layers.
-        return ...
+        for l in self.layers:
+            X = l.forward(X)
+        return X
 
     def backward(self, target: np.ndarray, out: np.ndarray) -> float:
         """One backward pass through all the layers of the neural network.
@@ -121,7 +123,10 @@ class NeuralNetwork(ABC):
         ### YOUR CODE HERE ###
         # Compute the loss.
         # Backpropagate through the network's layers.
-        return ...
+        dL = self.loss.backward(target, out)
+        for l in reversed(self.layers):
+            dL = l.backward(dL)
+        return self.loss.forward(target, out)
 
     def update(self) -> None:
         """One step of gradient update using the derivatives calculated by
@@ -295,5 +300,8 @@ class NeuralNetwork(ABC):
         ### YOUR CODE HERE ###
         # Do a forward pass. Maybe use a function you already wrote?
         # Get the loss. Remember that the `backward` function returns the loss.
-        return ...
+        for l in self.layers:
+            X = l.forward(X)
+        L = self.loss.forward(Y, X)
+        return (X, L)
 

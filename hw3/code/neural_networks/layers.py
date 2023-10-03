@@ -99,13 +99,13 @@ class FullyConnected(Layer):
 
         ### BEGIN YOUR CODE ###
 
-        W = self.init_weights(...)
-        b = ...
+        W = self.init_weights([self.n_in, self.n_out])
+        b = np.zeros([self.n_out,])
 
         self.parameters = OrderedDict({"W": W, "b": b})
-        self.cache: OrderedDict = ...  # cache for backprop
-        self.gradients: OrderedDict = ...  # parameter gradients initialized to zero
-                                           # MUST HAVE THE SAME KEYS AS `self.parameters`
+        self.cache: OrderedDict = {"S": np.zeros([X_shape[0], self.n_out]), "X": np.zeros(X_shape)}  # cache for backprop
+        self.gradients: OrderedDict = {"W": np.zeros_like(W), "b": np.zeros_like(b)}    # parameter gradients initialized to zero
+                                                                                        # MUST HAVE THE SAME KEYS AS `self.parameters`
 
         ### END YOUR CODE ###
 
@@ -127,12 +127,15 @@ class FullyConnected(Layer):
             self._init_parameters(X.shape)
 
         ### BEGIN YOUR CODE ###
-        
+        W = self.parameters["W"]
+        b = self.parameters["b"]
         # perform an affine transformation and activation
-        out = ...
+        aff = X@W+b
+        out = self.activation.forward(aff)
         
         # store information necessary for backprop in `self.cache`
-
+        self.cache["S"]= aff
+        self.cache["X"]= X
         ### END YOUR CODE ###
 
         return out
@@ -157,15 +160,22 @@ class FullyConnected(Layer):
         ### BEGIN YOUR CODE ###
         
         # unpack the cache
+        S = self.cache["S"]
+        W = self.parameters["W"]
+        X = self.cache["X"]
         
         # compute the gradients of the loss w.r.t. all parameters as well as the
         # input of the layer
 
-        dX = ...
+        dA = self.activation.backward(S, dLdY)
+        dX = dA@W.T
 
         # store the gradients in `self.gradients`
         # the gradient for self.parameters["W"] should be stored in
         # self.gradients["W"], etc.
+        
+        self.gradients["W"] = np.sum(X.reshape([X.shape[0],-1,1]) * dA.reshape([dA.shape[0],1,-1]), axis=0)
+        self.gradients["b"] = np.sum(dA, axis=0)
 
         ### END YOUR CODE ###
 
