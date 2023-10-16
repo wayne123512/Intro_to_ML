@@ -75,7 +75,7 @@ student_implementations = {
     "Layer Implementations:": [
         "layers.FullyConnected",
     ],
-    "Loss Function Implementations:": ["losses.CrossEntropy", "losses.L2",],
+    "Loss Function Implementations:": ["losses.CrossEntropy",],
     "Model Implementations:": [
         "models.NeuralNetwork.forward",
         "models.NeuralNetwork.backward",

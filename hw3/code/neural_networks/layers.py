@@ -174,7 +174,8 @@ class FullyConnected(Layer):
         # the gradient for self.parameters["W"] should be stored in
         # self.gradients["W"], etc.
         
-        self.gradients["W"] = np.sum(X.reshape([X.shape[0],-1,1]) * dA.reshape([dA.shape[0],1,-1]), axis=0)
+        #self.gradients["W"] = np.sum(X.reshape([X.shape[0],-1,1]) @ dA.reshape([dA.shape[0],1,-1]), axis=0)
+        self.gradients["W"] = X.T@dA
         self.gradients["b"] = np.sum(dA, axis=0)
 
         ### END YOUR CODE ###

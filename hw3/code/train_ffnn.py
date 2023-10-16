@@ -14,7 +14,7 @@ fc1 = AttrDict(
         "name": "fully_connected",
         "activation": "relu",
         "weight_init": "xavier_uniform",
-        "n_out": 25,
+        "n_out": 40,
     }
 )
 
