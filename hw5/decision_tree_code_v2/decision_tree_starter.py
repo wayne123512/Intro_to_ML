@@ -7,9 +7,10 @@ import pandas as pd
 from pydot import graph_from_dot_data
 import scipy.io
 from scipy import stats
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.tree import DecisionTreeClassifier, export_graphviz, plot_tree
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import cross_val_score
+import matplotlib.pyplot as plt
 
 eps = 1e-5  # a small number
 
@@ -26,12 +27,23 @@ class DecisionTree:
     @staticmethod
     def entropy(y):
         # TODO implement entropy function
-        pass
+        if y.shape[0] == 0:
+            return 0
+        p = np.count_nonzero(y) / y.shape[0]
+        if p == 0 or p == 1:
+            return 0
+        return -p * np.log(p) - (1-p) * np.log(1-p)
 
     @staticmethod
     def information_gain(X, y, thresh):
         # TODO implement information gain function
-        return np.random.rand()
+        before = DecisionTree.entropy(y)
+        mask = X < thresh
+        lY = y[mask]
+        rY = y[~mask]
+        p = lY.shape[0] / (lY.shape[0] + rY.shape[0])
+        after = p * DecisionTree.entropy(lY) + (1-p) * DecisionTree.entropy(rY)
+        return before - after
 
     def split(self, X, y, idx, thresh):
         X0, idx0, X1, idx1 = self.split_test(X, idx=idx, thresh=thresh)
@@ -78,10 +90,10 @@ class DecisionTree:
             else:
                 self.max_depth = 0
                 self.data, self.labels = X, y
-                self.pred = stats.mode(y).mode[0]
+                self.pred = stats.mode(y).mode
         else:
             self.data, self.labels = X, y
-            self.pred = stats.mode(y).mode[0]
+            self.pred = stats.mode(y).mode
         return self
 
     def predict(self, X):
@@ -118,11 +130,20 @@ class BaggedTrees(BaseEstimator, ClassifierMixin):
 
     def fit(self, X, y):
         # TODO implement function
-        pass
+        for tree in self.decision_trees:
+            mask = np.random.choice(X.shape[0], size=X.shape[0])
+            x_sample = X[mask,:]
+            y_sample = y[mask]
+            tree.fit(x_sample, y_sample)
+        return self
 
     def predict(self, X):
         # TODO implement function
-        pass
+        predict = []
+        for tree in self.decision_trees:
+            predict.append(tree.predict(X))
+        predict = np.array(predict)
+        return stats.mode(predict, axis=0).mode
 
 class RandomForest(BaggedTrees):
 
@@ -130,7 +151,32 @@ class RandomForest(BaggedTrees):
         if params is None:
             params = {}
         # TODO implement function
-        pass
+        super().__init__(params, n)
+        self.m = m
+        self.selectF = None
+
+    def fit(self, X, y):
+        if self.selectF == None:
+            print('Initialize selectF for RT')
+        else:
+            print('Reset selectF for RT')
+        self.selectF = []
+        for tree in self.decision_trees:
+            mask = np.random.choice(X.shape[0], size=X.shape[0])
+            feature_mask = np.random.choice(X.shape[1], size = self.m)
+            x_sample = X[mask, :][:, feature_mask]
+            self.selectF.append(feature_mask)
+            y_sample = y[mask]
+            tree.fit(x_sample, y_sample)
+        return self
+    
+    def predict(self, X):
+        predict = []
+        for i in range(0, self.n):
+            idx = np.asarray(self.selectF)[i]
+            predict.append(self.decision_trees[i].predict(X[:,idx]))
+        predict = np.array(predict)
+        return stats.mode(predict, axis=0).mode
 
 
 def preprocess(data, fill_mode=True, min_freq=10, onehot_cols=[]):
@@ -161,7 +207,7 @@ def preprocess(data, fill_mode=True, min_freq=10, onehot_cols=[]):
     if fill_mode:
         for i in range(data.shape[-1]):
             mode = stats.mode(data[((data[:, i] < -1 - eps) +
-                                    (data[:, i] > -1 + eps))][:, i]).mode[0]
+                                    (data[:, i] > -1 + eps))][:, i]).mode
             data[(data[:, i] > -1 - eps) *
                  (data[:, i] < -1 + eps)][:, i] = mode
 
@@ -190,6 +236,11 @@ def generate_submission(testing_data, predictions):
     df.to_csv('predictions.csv', index_label='Id')
 
     # Now download the predictions.csv file to submit.`
+
+def calc_train_accuracy(clf, X, y):
+    predict = clf.predict(X)
+    assert(predict.shape == y.shape)
+    return np.sum(predict == y) / y.shape[0]
 
 if __name__ == "__main__":
     dataset = "titanic"
@@ -248,29 +299,50 @@ if __name__ == "__main__":
     # Basic decision tree
     print("\n\nPart (a-b): simplified decision tree")
     # TODO
-    
+    DT = DecisionTree(max_depth=params["max_depth"], feature_labels=features)
+    DT = DT.fit(X, y)
+    print(DT.__repr__)
 
     # Basic decision tree
     print("\n\nPart (c): sklearn's decision tree")
     # Hint: Take a look at the imports!
-    clf = None # TODO
+    clf = DecisionTreeClassifier(**params) # TODO
+    clf = clf.fit(X, y)
+    figure = plt.figure(figsize=(12,12))
+    plot_tree(clf, feature_names=features, class_names=class_names, filled=True)
+    plt.show()
     # TODO
     # Visualizing the tree
-    out = io.StringIO()
-    export_graphviz(
-        clf, out_file=out, feature_names=features, class_names=class_names)
-    # For OSX, may need the following for dot: brew install gprof2dot
-    graph = graph_from_dot_data(out.getvalue())
-    graph_from_dot_data(out.getvalue())[0].write_pdf("%s-basic-tree.pdf" % dataset)
+    # out = io.StringIO()
+    # export_graphviz(
+    #     clf, out_file=out, feature_names=features, class_names=class_names)
+    # # For OSX, may need the following for dot: brew install gprof2dot
+    # graph = graph_from_dot_data(out.getvalue())
+    # graph_from_dot_data(out.getvalue())[0].write_pdf("%s-basic-tree.pdf" % dataset)
 
     # Bagged trees
     print("\n\nPart (d-e): bagged trees")
     # TODO
+    BT = BaggedTrees(params=params)
+    BT = BT.fit(X, y)
 
     # Random forest
     print("\n\nPart (f-g): random forest")
     # TODO
+    RT = RandomForest(params=params, m=8)
+    RT = RT.fit(X, y)
 
     # Generate csv file of predictions on test data
     # TODO
-
+    print('Start evaluation for ' + dataset)
+    print('For Basic Decision Tree:')
+    evaluate(clf)
+    print('Training Accuracy : ', calc_train_accuracy(clf, X, y))
+    print('For Bagging Tree:')
+    evaluate(BT)
+    print('Training Accuracy : ', calc_train_accuracy(BT, X, y))
+    print('For Radom Forest:')
+    evaluate(RT)
+    print('Training Accuracy : ', calc_train_accuracy(RT, X, y))
+    prediction = BT.predict(Z)
+    generate_submission(Z, prediction)
