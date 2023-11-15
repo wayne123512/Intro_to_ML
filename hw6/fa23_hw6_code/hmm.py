@@ -1,8 +1,9 @@
+#%%
 import random
 from env import Env
 import numpy as np
 import matplotlib.pyplot as plt
-
+#%%
 def viterbi(observations: list[list[int]], epsilon: float) -> np.ndarray:
     """
     Params: 
@@ -18,8 +19,46 @@ def viterbi(observations: list[list[int]], epsilon: float) -> np.ndarray:
     1. (predictions[t][0], predictions[t][1]) is the prediction for the state at timestep t
     """
     # TODO: implement the viterbi algorithm
-    pass
+    def calc_emission_prob(truth, obs):
+        diff = np.sum(truth != obs)
+        return ((1-epsilon) ** (4-diff)) * (epsilon ** diff)
     
+    # initialization
+    v = np.ones((rows,cols)) * 1.0 / (rows * cols)
+    ptr = -1 * np.ones((traj_len, rows, cols, 2), dtype=int)
+
+    for r in range(0, rows):
+        for c in range(0, cols):
+            truth = env.get_true_sensor_reading(r, c)
+            v[r][c] = v[r][c] * calc_emission_prob(truth , observations[0])
+    # start the algorithm
+    for t in range(1, traj_len):
+        v_new = np.zeros((rows,cols))
+        for r in range(0,rows):
+            for c in range(0, cols):
+                tmp_v = 0
+                tmp_ptr = [-1,-1] 
+                for nghb in env.get_neighbors(r, c):
+                    i = nghb[0]
+                    j = nghb[1]
+                    value = 1.0 / np.size(env.get_neighbors(i, j), axis=0) * v[i][j]
+                    if value >= tmp_v:
+                        tmp_v = value
+                        tmp_ptr = [i, j]
+                truth = env.get_true_sensor_reading(r, c)
+                v_new[r][c] = tmp_v * calc_emission_prob(truth, observations[t])
+                ptr[t][r][c] = np.array(tmp_ptr)
+        v = v_new
+    r_idx , c_idx = np.unravel_index(v.argmax(), v.shape)
+    out = []
+    out.append(np.array([r_idx,c_idx]))
+    for i in range(1, traj_len):
+       r_idx , c_idx = ptr[traj_len-i][r_idx][c_idx]
+       out.append(np.array([r_idx,c_idx]))
+    
+    out.reverse()
+    assert len(out) == traj_len, "Mismatch length"
+    return np.array(out)
 
 if __name__ == '__main__':
     random.seed(12345)
